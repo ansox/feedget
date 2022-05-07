@@ -1,7 +1,9 @@
 import { ArrowLeft } from "phosphor-react";
 import React, { FormEvent } from "react";
 import { FeedbackType, feedbackTypes } from "..";
+import { api } from "../../../lib/apis";
 import { CloseButton } from "../../CloseButton";
+import { Loading } from "../Loading";
 import { ScreenShotButton } from "../ScreenShotButton";
 
 interface FeedbackContentStepProps {
@@ -12,12 +14,28 @@ interface FeedbackContentStepProps {
 
 export function FeedbackContentStep({feedbackType, onFeedbackRestartRequest, onFeedbackSent}: FeedbackContentStepProps) {
   const feedbackTypeInfo = feedbackTypes[feedbackType];
-  const [screenShot, setScreenShot] = React.useState<string | null>(null);
+  const [screenshot, setScreenshot] = React.useState<string | null>(null);
   const [comment, setComment] = React.useState<string>('');
+  const [isSendingFeedback, setIsSendingFeedback] = React.useState(false);
 
-  function handleSubmitFeedback(event: FormEvent) {
+  async function handleSubmitFeedback(event: FormEvent) {
     event.preventDefault();
-    console.log('submit feedback', comment, screenShot);
+
+    setIsSendingFeedback(true);
+   
+    await fetch(`${api.baseURL}/feedbacks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: feedbackType,
+        comment,
+        screenshot
+      })
+    })
+
+    setIsSendingFeedback(false);
     onFeedbackSent();
   }
 
@@ -40,13 +58,13 @@ export function FeedbackContentStep({feedbackType, onFeedbackRestartRequest, onF
         className="min-w-[304px] w-full min-h-[112px] text-sm placeholder-zinc-400 text-zinc-100 border-zinc-600 bg-transparent rounded-md focus:border-brand-500 focus:ring-brand-500 focus:ring-1 focus:outline-none resize-none" placeholder="Conte com detalhes o que está acontecendo..."/>
 
         <footer className="flex gap-2 mt-2">
-          <ScreenShotButton screenShot={screenShot} onScreenshotTook={setScreenShot} />
+          <ScreenShotButton screenShot={screenshot} onScreenshotTook={setScreenshot} />
           <button
             type="submit"
             className="p-2 bg-brand-500 rounded-md border-transparent flex-1 flex items-center justify-center text-sm hover:bg-brand-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:ring-brand-500 transitions-colors disabled:opacity-50 disabled:hover:bg-brand-500"
-            disabled={!comment}
+            disabled={!comment || isSendingFeedback}
           >
-            Enviar feedback
+            { isSendingFeedback ? <Loading /> : 'Enviar feedback' }
           </button>
         </footer>
       </form>
